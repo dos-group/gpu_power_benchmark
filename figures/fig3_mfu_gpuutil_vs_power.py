@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Figure 3 – MFU and GPU Utilisation vs internal power across dtypes.
-Exports: Euro-Par Paper/pdf/fig3_mfu_gpuutil_vs_power.pdf
+Exports: results/fig3_mfu_gpuutil_vs_power.pdf
 """
 
 from pathlib import Path
@@ -13,13 +13,13 @@ import plotly.io as pio
 # Paths
 # ------------------------------------------------------------------
 HW_CONFIGS = [
-    ("./aggregation_128/mfu_aggregated_per_config_A100.csv",  "./mfu_benchmark_results_A100_128.csv",  "NVIDIA A100"),
-    ("./aggregation_128/mfu_aggregated_per_config_L40.csv",   "./mfu_benchmark_results_L40_128.csv",   "NVIDIA L40"),
-    ("./aggregation_128/mfu_aggregated_per_config_GPU06.csv", "./mfu_benchmark_results_GPU06_128.csv", "Quadro 5000"),
-    ("./aggregation_128/mfu_aggregated_per_config_4070.csv",  "./mfu_benchmark_results_4070_128.csv",  "RTX 4070 Ti"),
+    ("../aggregation_results/mfu_aggregated_per_config_A100.csv",  "../benchmark_results/mfu_benchmark_results_A100_128.csv",  "NVIDIA A100"),
+    ("../aggregation_results/mfu_aggregated_per_config_L40.csv",   "../benchmark_results/mfu_benchmark_results_L40_128.csv",   "NVIDIA L40"),
+    ("../aggregation_results/mfu_aggregated_per_config_GPU06.csv", "../benchmark_results/mfu_benchmark_results_GPU06_128.csv", "Quadro 5000"),
+    ("../aggregation_results/mfu_aggregated_per_config_4070.csv",  "../benchmark_results/mfu_benchmark_results_4070_128.csv",  "RTX 4070 Ti"),
 ]
 
-PDF_OUT = Path("Euro-Par Paper/pdf/fig3_mfu_gpuutil_vs_power.pdf")
+PDF_OUT = Path("../results/fig3_mfu_gpuutil_vs_power.pdf")
 PDF_OUT.parent.mkdir(parents=True, exist_ok=True)
 
 # ------------------------------------------------------------------

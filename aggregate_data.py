@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 # ============================================================================
 # CONFIGURATION - Edit these values as needed
 # ============================================================================
-INPUT_CSV = "mfu_benchmark_results_A100_128.csv"
-OUTPUT_DIR = "./aggregation_128"
+INPUT_CSV = "benchmark_results/mfu_benchmark_results_A100_128.csv"
+OUTPUT_DIR = "./aggregation_results"
 MAX_SAMPLES_PER_CONFIG = 300
 GENERATE_CHARTS = True
 

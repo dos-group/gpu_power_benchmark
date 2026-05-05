@@ -17,15 +17,15 @@ PathLike = Union[str, Path]
 # ----------------------------------------------------------
 
 HW_CONFIGS: list[tuple[PathLike, PathLike, str]] = [
-    ("./aggregation_128/mfu_aggregated_per_config_A100.csv",  "./mfu_benchmark_results_A100_128.csv",  "NVIDIA A100"),
-    ("./aggregation_128/mfu_aggregated_per_config_L40.csv",   "./mfu_benchmark_results_L40_128.csv",   "NVIDIA L40"),
-    ("./aggregation_128/mfu_aggregated_per_config_GPU06.csv", "./mfu_benchmark_results_GPU06_128.csv", "Quadro 5000"),
-    ("./aggregation_128/mfu_aggregated_per_config_4070.csv",  "./mfu_benchmark_results_4070_128.csv",  "RTX 4070 Ti"),
-    ("./aggregation_128/mfu_aggregated_per_config_MI210.csv", "./mfu_benchmark_results_MI210_128.csv", "AMD MI210"),
+    ("./aggregation_results/mfu_aggregated_per_config_A100.csv",  "./benchmark_results/mfu_benchmark_results_A100_128.csv",  "NVIDIA A100"),
+    ("./aggregation_results/mfu_aggregated_per_config_L40.csv",   "./benchmark_results/mfu_benchmark_results_L40_128.csv",   "NVIDIA L40"),
+    ("./aggregation_results/mfu_aggregated_per_config_GPU06.csv", "./benchmark_results/mfu_benchmark_results_GPU06_128.csv", "Quadro 5000"),
+    ("./aggregation_results/mfu_aggregated_per_config_4070.csv",  "./benchmark_results/mfu_benchmark_results_4070_128.csv",  "RTX 4070 Ti"),
+    ("./aggregation_results/mfu_aggregated_per_config_MI210.csv", "./benchmark_results/mfu_benchmark_results_MI210_128.csv", "AMD MI210"),
 ]
 
-OUTDIR = Path("Euro-Par Paper")
-OUTFILE = OUTDIR / "cross_hardware_energy_predictors_v2.html"
+OUTDIR = Path("results")
+OUTFILE = OUTDIR / "cross_hardware_energy_predictors.html"
 OUTDIR.mkdir(exist_ok=True)
 
 
