@@ -305,7 +305,26 @@ if needed_cfg.issubset(df_raw_all.columns) and CFG_KEYS:
 cfg_r2_df = pd.DataFrame(cfg_r2_rows)
 
 
-def r2_mean_std_table(cfg_df: pd.DataFrame, param: str) -> pd.DataFrame:
+# MI210's GPU Utilization is a binary GRBM_COUNT activity counter (see paper
+# Section 4.1), not a throughput proxy. We therefore exclude it from any
+# GPU-Utilization aggregate to avoid skewing per-parameter means.
+UTIL_EXCLUDE_HW = {"AMD MI210"}
+
+
+def _fmt_pct(mean: float, std: float) -> str:
+    if pd.isna(mean):
+        return "--"
+    std_part = "0.0" if pd.isna(std) else f"{std * 100:.1f}"
+    return f"{mean * 100:.1f} $\\pm$ {std_part}\\,\\%"
+
+
+def r2_summary_table(cfg_df: pd.DataFrame, param: str) -> pd.DataFrame:
+    """Per-slice mean +/- std of config-level R^2 for MFU and GPU Util.
+
+    GPU Util column excludes MI210 (binary GRBM counter). MFU column uses all
+    GPUs. Returned table reports the actual config count behind each cell so
+    the asymmetry is visible.
+    """
     if cfg_df.empty or param not in cfg_df.columns:
         return pd.DataFrame()
 
@@ -313,63 +332,106 @@ def r2_mean_std_table(cfg_df: pd.DataFrame, param: str) -> pd.DataFrame:
     r2_mfu = "R2_MFU (%)"
     r2_util = "R2_UTIL"
 
-    keep = df[[r2_mfu, r2_util]].notna().any(axis=1)
-    df = df.loc[keep].copy()
-
-    if param in ["batch_size", "context_window"]:
+    if param in ("batch_size", "context_window"):
         df[param] = pd.to_numeric(df[param], errors="coerce")
 
-    out = (
-        df.groupby(param, dropna=True)
-        .agg(
-            n_configs=("n_raw", "count"),
-            n_raw_total=("n_raw", "sum"),
-            MFU_R2_mean=(r2_mfu, "mean"),
-            MFU_R2_std=(r2_mfu, "std"),
-            UTIL_R2_mean=(r2_util, "mean"),
-            UTIL_R2_std=(r2_util, "std"),
-            n_hw=("hardware", "nunique") if "hardware" in df.columns else ("n_raw", "count"),
-            n_models=("model_name", "nunique") if "model_name" in df.columns else ("n_raw", "count"),
-            n_dtypes=("dtype", "nunique") if "dtype" in df.columns else ("n_raw", "count"),
-        )
+    df_mfu = df.dropna(subset=[r2_mfu]).copy()
+    df_util = df[~df["hardware"].isin(UTIL_EXCLUDE_HW)].dropna(subset=[r2_util]).copy()
+
+    mfu_agg = (
+        df_mfu.groupby(param, dropna=True)[r2_mfu]
+        .agg(MFU_mean="mean", MFU_std="std", MFU_n="count")
         .reset_index()
     )
-
-    out["MFU-energy correlation"] = (
-        (out["MFU_R2_mean"] * 100).round(1).astype(str)
-        + " ± "
-        + (out["MFU_R2_std"] * 100).round(1).fillna(0).astype(str)
-        + " %"
+    util_agg = (
+        df_util.groupby(param, dropna=True)[r2_util]
+        .agg(UTIL_mean="mean", UTIL_std="std", UTIL_n="count")
+        .reset_index()
     )
-    out["UTIL-energy correlation"] = (
-        (out["UTIL_R2_mean"] * 100).round(1).astype(str)
-        + " ± "
-        + (out["UTIL_R2_std"] * 100).round(1).fillna(0).astype(str)
-        + " %"
-    )
+    out = mfu_agg.merge(util_agg, on=param, how="outer").sort_values(param)
 
-    out = out.sort_values(param)
+    out["MFU $R^2$"] = [_fmt_pct(m, s) for m, s in zip(out["MFU_mean"], out["MFU_std"])]
+    out["GPU Util $R^2$"] = [_fmt_pct(m, s) for m, s in zip(out["UTIL_mean"], out["UTIL_std"])]
+    out["$n_\\text{MFU}$"] = out["MFU_n"].fillna(0).astype(int)
+    out["$n_\\text{Util}$"] = out["UTIL_n"].fillna(0).astype(int)
 
-    cols = [
-        param,
-        "MFU-energy correlation",
-        "UTIL-energy correlation",
-        "n_configs",
-        "n_raw_total",
-        "n_hw",
-        "n_models",
-        "n_dtypes",
-    ]
-    return out[cols]
+    return out[[param, "MFU $R^2$", "GPU Util $R^2$",
+                "$n_\\text{MFU}$", "$n_\\text{Util}$"]]
 
 
 param_tables: dict[str, pd.DataFrame] = {}
-for param in ["batch_size", "context_window", "dtype", "hardware"]:
-    t = r2_mean_std_table(cfg_r2_df, param)
+for param in ["hardware", "dtype", "batch_size", "context_window"]:
+    t = r2_summary_table(cfg_r2_df, param)
     if not t.empty:
         param_tables[param] = t
-        print(f"\nEffect of {param} on MFU/UTIL -> INTERNAL power predictability (config-level R^2)")
+        print(f"\nConfig-level R^2 sliced by {param} (Util excludes MI210):")
         print(t.to_string(index=False))
+
+
+# --- LaTeX export of the restructured Table 2 ----------------------------
+
+def _emit_latex_table(param_tables: dict[str, pd.DataFrame]) -> str:
+    label_map = {
+        "hardware": "Hardware",
+        "dtype": "Dtype",
+        "batch_size": "Batch size",
+        "context_window": "Context window",
+    }
+    lines = [
+        r"\begin{table}[t]",
+        r"\centering",
+        r"\caption{Mean configuration-level explained variance ($R^2$) of linear "
+        r"power models, sliced by hardware and by each independent variable. "
+        r"Each row aggregates the per-configuration $R^2$ values "
+        r"(one fit per (hw, model, dtype, batch, ctx, warmup, cooldown) tuple) "
+        r"falling into that slice, reported as mean~$\pm$~std. "
+        r"$n_\text{MFU}$ and $n_\text{Util}$ give the number of configurations "
+        r"behind each cell. The AMD MI210 is excluded from the GPU Utilization "
+        r"column because its ROCm \texttt{GRBM\_COUNT}-derived signal is a "
+        r"binary activity flag rather than a throughput proxy "
+        r"(see Section~\ref{Predictor Performance}); MFU values for the MI210 "
+        r"remain meaningful and are reported.}",
+        r"\small",
+        r"\setlength{\tabcolsep}{4pt}",
+        r"\renewcommand{\arraystretch}{1.15}",
+        r"\begin{tabular}{lcccc}",
+        r"\toprule",
+        r"\textbf{Slice} & \textbf{MFU $R^2$} & \textbf{GPU Util $R^2$} & "
+        r"$\boldsymbol{n_\text{MFU}}$ & $\boldsymbol{n_\text{Util}}$ \\",
+        r"\midrule",
+    ]
+    first = True
+    for param in ["hardware", "dtype", "batch_size", "context_window"]:
+        if param not in param_tables:
+            continue
+        t = param_tables[param]
+        if not first:
+            lines.append(r"\midrule")
+        first = False
+        lines.append(rf"\multicolumn{{5}}{{l}}{{\textit{{{label_map[param]}}}}} \\")
+        for _, r in t.iterrows():
+            slice_name = str(r[param])
+            if param in ("batch_size", "context_window"):
+                try:
+                    slice_name = str(int(float(slice_name)))
+                except Exception:
+                    pass
+            lines.append(
+                f"\\quad {slice_name} & {r['MFU $R^2$']} & {r['GPU Util $R^2$']} & "
+                f"{r['$n_\\text{MFU}$']} & {r['$n_\\text{Util}$']} \\\\"
+            )
+    lines += [
+        r"\bottomrule",
+        r"\end{tabular}",
+        r"\label{tab:mfu_util_internal_power_per_config}",
+        r"\end{table}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+tex_out = OUTDIR / "tab_configuration_variance.tex"
+tex_out.write_text(_emit_latex_table(param_tables))
+print(f"\nLaTeX table written -> {tex_out.resolve()}")
 
 
 # ----------------------------------------------------------

@@ -1,50 +1,38 @@
 #!/usr/bin/env python
-"""
-Figure 2 – Prediction error of MFU vs GPU Utilisation for internal power.
-Exports: results/fig2_prediction_error.pdf
+"""Per-sample prediction error for MFU vs GPU Utilisation (boxplots).
+
+Exports: results/prediction_error.pdf
 """
 
-from pathlib import Path
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
-import plotly.graph_objects as go
 import statsmodels.api as sm
 
-# ------------------------------------------------------------------
-# Paths
-# ------------------------------------------------------------------
-HW_CONFIGS = [
-    ("../aggregation_results/mfu_aggregated_per_config_A100.csv",  "../benchmark_results/mfu_benchmark_results_A100_128.csv",  "NVIDIA A100"),
-    ("../aggregation_results/mfu_aggregated_per_config_L40.csv",   "../benchmark_results/mfu_benchmark_results_L40_128.csv",   "NVIDIA L40"),
-    ("../aggregation_results/mfu_aggregated_per_config_GPU06.csv", "../benchmark_results/mfu_benchmark_results_GPU06_128.csv", "Quadro 5000"),
-    ("../aggregation_results/mfu_aggregated_per_config_4070.csv",  "../benchmark_results/mfu_benchmark_results_4070_128.csv",  "RTX 4070 Ti"),
+from _style import (
+    HW_CONFIGS, UTIL_EXCLUDE_HW, PREDICTOR_COLORS,
+    FONT_LABEL, FONT_TICK, FONT_FACET,
+    DOUBLE_COL_W, RESULTS_DIR,
+)
+
+# Hardware order on the x-axis (one facet per GPU, plus an empty placeholder
+# slot for an upcoming L4 so the layout stays stable when that data lands).
+HW_ORDER = [
+    "NVIDIA A100",
+    "NVIDIA L40",
+    "NVIDIA L4",      # placeholder — no data yet
+    "Quadro 5000",
+    "RTX 4070 Ti",
+    "AMD MI210",
 ]
 
-PDF_OUT = Path("../results/fig2_prediction_error.pdf")
-PDF_OUT.parent.mkdir(parents=True, exist_ok=True)
+PDF_OUT = RESULTS_DIR / "prediction_error.pdf"
 
-# ------------------------------------------------------------------
-# Typography  ← edit here to restyle the whole figure
-# ------------------------------------------------------------------
-FONT_LABEL  = 20   # axis labels
-FONT_TICK   = 14    # tick labels
-FONT_FACET  = 20   # facet / panel titles
-
-# ------------------------------------------------------------------
-# Axis labels  ← edit here ("" to hide)
-# ------------------------------------------------------------------
-X_LABEL = ""                                          # supervisor: x-label can go
+X_LABEL = ""
 Y_LABEL = "Absolute error in internal power pred. (%)"
 
-# ------------------------------------------------------------------
-# Colors for the two predictors  ← edit here
-# ------------------------------------------------------------------
-COLOR_MAP = {
-    "MFU (%)":      "steelblue",
-    "GPU Util (%)": "darkorange",
-}
+COLOR_MAP = PREDICTOR_COLORS
 
 # ------------------------------------------------------------------
 # Load raw data
@@ -80,6 +68,10 @@ for hw, g in df_raw_all.groupby("hardware"):
     ]:
         if pred_col not in g.columns:
             continue
+        # Skip GPU Util on hardware where the signal is not meaningful
+        # (e.g. AMD MI210 GRBM_COUNT is binary).
+        if pred_label == "GPU Util (%)" and hw in UTIL_EXCLUDE_HW:
+            continue
         g_sub = g.dropna(subset=[pred_col, "power_draw_watts"]).copy()
         if g_sub[pred_col].nunique() < 2 or len(g_sub) < 5:
             continue
@@ -107,6 +99,12 @@ pred_err_df = pd.DataFrame(rows)
 if pred_err_df.empty:
     raise SystemExit("No prediction-error data computed.")
 
+# Pin facet order; missing hardware (e.g. L4 placeholder) stays as an
+# empty panel because facet_col uses a categorical with the full order.
+pred_err_df["hardware"] = pd.Categorical(
+    pred_err_df["hardware"], categories=HW_ORDER, ordered=True,
+)
+
 # ------------------------------------------------------------------
 # Build figure
 # ------------------------------------------------------------------
@@ -118,7 +116,7 @@ fig = px.violin(
     y="rel_error_pct",
     color="Predictor",
     facet_col="hardware",
-    facet_col_wrap=2,
+    category_orders={"hardware": HW_ORDER},
     box=True,
     points="outliers",
     color_discrete_map=COLOR_MAP,
@@ -162,9 +160,9 @@ fig.update_yaxes(title_font=dict(size=FONT_LABEL), tickfont=dict(size=FONT_TICK)
 
 fig.update_layout(
     template="simple_white",
-    width=900,
-    height=550,                # enough vertical space to read facet labels clearly
-    margin=dict(l=100, r=40, t=40, b=80),
+    width=DOUBLE_COL_W,
+    height=420,
+    margin=dict(l=80, r=20, t=40, b=80),
     showlegend=False,
     font=dict(size=FONT_TICK),
     title=None,

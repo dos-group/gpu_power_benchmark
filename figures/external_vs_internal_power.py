@@ -1,35 +1,22 @@
 #!/usr/bin/env python
-"""
-Figure 1 – External vs Internal Power by hardware.
-Exports: results/fig1_external_vs_internal_power.pdf
+"""External vs internal GPU power, by hardware (validation, appendix).
+
+Exports: results/external_vs_internal_power.pdf
 """
 
-from pathlib import Path
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 import statsmodels.api as sm
 
-# ------------------------------------------------------------------
-# Paths
-# ------------------------------------------------------------------
-HW_CONFIGS = [
-    ("../aggregation_results/mfu_aggregated_per_config_A100.csv",  "../benchmark_results/mfu_benchmark_results_A100_128.csv",  "NVIDIA A100"),
-    ("../aggregation_results/mfu_aggregated_per_config_L40.csv",   "../benchmark_results/mfu_benchmark_results_L40_128.csv",   "NVIDIA L40"),
-    ("../aggregation_results/mfu_aggregated_per_config_GPU06.csv", "../benchmark_results/mfu_benchmark_results_GPU06_128.csv", "Quadro 5000"),
-    ("../aggregation_results/mfu_aggregated_per_config_4070.csv",  "../benchmark_results/mfu_benchmark_results_4070_128.csv",  "RTX 4070 Ti"),
-]
+from _style import (
+    HW_CONFIGS, HW_COLORS, EXTERNAL_VALIDATED_HW,
+    FONT_LABEL, FONT_TICK, FONT_FACET,
+    SINGLE_COL_W, RESULTS_DIR,
+)
 
-PDF_OUT = Path("../results/fig1_external_vs_internal_power.pdf")
-PDF_OUT.parent.mkdir(parents=True, exist_ok=True)
-
-# ------------------------------------------------------------------
-# Typography  ← edit here to restyle the whole figure
-# ------------------------------------------------------------------
-FONT_LABEL  = 20   # axis labels (same size as body text in the paper)
-FONT_TICK   = 14    # tick labels (slightly smaller, as suggested)
-FONT_FACET  = 20   # facet / panel titles
+PDF_OUT = RESULTS_DIR / "external_vs_internal_power.pdf"
 
 # ------------------------------------------------------------------
 # Axis labels  ← edit here
@@ -48,6 +35,8 @@ Y_RANGE = [200, None]
 # ------------------------------------------------------------------
 dfs = []
 for agg_path, _, hw_name in HW_CONFIGS:
+    if hw_name not in EXTERNAL_VALIDATED_HW:
+        continue  # Only GPUs with real external-meter readings belong here.
     try:
         df = pd.read_csv(agg_path)
         if "model_name" in df.columns:
@@ -77,15 +66,16 @@ fig = px.scatter(
     subset,
     x="power_draw_watts_mean",
     y="power_meter_active_power_w_mean",
-    color="model_name",
+    color="hardware",
     symbol=symbol_col,
+    color_discrete_map=HW_COLORS,
     facet_col="hardware",
     facet_col_wrap=2,
     trendline="ols",
     labels={
         "power_draw_watts_mean": X_LABEL,
         "power_meter_active_power_w_mean": Y_LABEL,
-        "model_name": "Model",
+        "hardware": "Hardware",
     },
 )
 
@@ -119,9 +109,9 @@ fig.update_yaxes(title_font=dict(size=FONT_LABEL), tickfont=dict(size=FONT_TICK)
 
 fig.update_layout(
     template="simple_white",
-    width=900,
-    height=300,
-    margin=dict(l=90, r=40, t=40, b=80),
+    width=SINGLE_COL_W,
+    height=320,
+    margin=dict(l=80, r=20, t=40, b=70),
     showlegend=False,
     font=dict(size=FONT_TICK),
     title=None,
