@@ -10,18 +10,17 @@ import plotly.express as px
 import plotly.io as pio
 import statsmodels.api as sm
 
-from _style import (
-    HW_CONFIGS, UTIL_EXCLUDE_HW, PREDICTOR_COLORS,
-    FONT_LABEL, FONT_TICK, FONT_FACET,
+from figures.style import (
+    PREDICTOR_COLORS, FONT_LABEL, FONT_TICK, FONT_FACET,
     DOUBLE_COL_W, RESULTS_DIR,
 )
+from analysis.data_loader import load_all_data, UTIL_EXCLUDE_HW
 
-# Hardware order on the x-axis (one facet per GPU, plus an empty placeholder
-# slot for an upcoming L4 so the layout stays stable when that data lands).
+# Hardware order on the x-axis
 HW_ORDER = [
     "NVIDIA A100",
     "NVIDIA L40",
-    "NVIDIA L4",      # placeholder — no data yet
+    "NVIDIA L4",
     "Quadro 5000",
     "RTX 4070 Ti",
     "AMD MI210",
@@ -29,29 +28,10 @@ HW_ORDER = [
 
 PDF_OUT = RESULTS_DIR / "prediction_error.pdf"
 
-X_LABEL = ""
-Y_LABEL = "Absolute error in internal power pred. (%)"
-
-COLOR_MAP = PREDICTOR_COLORS
-
 # ------------------------------------------------------------------
-# Load raw data
+# Load data
 # ------------------------------------------------------------------
-dfs_raw = []
-for _, raw_path, hw_name in HW_CONFIGS:
-    try:
-        df = pd.read_csv(raw_path)
-        if "model_name" in df.columns:
-            df = df.query('model_name != "baseline"')
-        df["hardware"] = hw_name
-        dfs_raw.append(df)
-    except FileNotFoundError as e:
-        print(f"  Skipping {hw_name}: {e}")
-
-if not dfs_raw:
-    raise SystemExit("No data loaded – check HW_CONFIGS paths.")
-
-df_raw_all = pd.concat(dfs_raw, ignore_index=True)
+_, df_raw_all = load_all_data()
 
 # ------------------------------------------------------------------
 # Compute per-row OLS residuals

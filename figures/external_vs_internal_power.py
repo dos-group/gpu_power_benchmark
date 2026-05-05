@@ -10,46 +10,24 @@ import plotly.express as px
 import plotly.io as pio
 import statsmodels.api as sm
 
-from _style import (
-    HW_CONFIGS, HW_COLORS, EXTERNAL_VALIDATED_HW,
-    FONT_LABEL, FONT_TICK, FONT_FACET,
+from figures.style import (
+    HW_COLORS, FONT_LABEL, FONT_TICK, FONT_FACET,
     SINGLE_COL_W, RESULTS_DIR,
 )
+from analysis.data_loader import load_all_data, EXTERNAL_VALIDATED_HW
 
 PDF_OUT = RESULTS_DIR / "external_vs_internal_power.pdf"
 
-# ------------------------------------------------------------------
-# Axis labels  ← edit here
-# ------------------------------------------------------------------
 X_LABEL = "GPU-reported power (W)"
 Y_LABEL = "External meter power (W)"
-
-# ------------------------------------------------------------------
-# Axis ranges  ← edit here
-# ------------------------------------------------------------------
 X_RANGE = [None, 350]
 Y_RANGE = [200, None]
 
 # ------------------------------------------------------------------
 # Load data
 # ------------------------------------------------------------------
-dfs = []
-for agg_path, _, hw_name in HW_CONFIGS:
-    if hw_name not in EXTERNAL_VALIDATED_HW:
-        continue  # Only GPUs with real external-meter readings belong here.
-    try:
-        df = pd.read_csv(agg_path)
-        if "model_name" in df.columns:
-            df = df.query('model_name != "baseline"')
-        df["hardware"] = hw_name
-        dfs.append(df)
-    except FileNotFoundError as e:
-        print(f"  Skipping {hw_name}: {e}")
-
-if not dfs:
-    raise SystemExit("No data loaded – check HW_CONFIGS paths.")
-
-df_all = pd.concat(dfs, ignore_index=True)
+df_all, _ = load_all_data()
+subset = df_all[df_all["hardware"].isin(EXTERNAL_VALIDATED_HW)]
 
 # ------------------------------------------------------------------
 # Build figure

@@ -14,7 +14,6 @@ because its ROCm GRBM_COUNT-derived signal is binary.
 Exports: results/predictor_vs_power.pdf
 """
 
-from __future__ import annotations
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -22,11 +21,11 @@ import plotly.io as pio
 import statsmodels.api as sm
 from plotly.subplots import make_subplots
 
-from _style import (
-    HW_CONFIGS, UTIL_EXCLUDE_HW,
-    FONT_LABEL, FONT_TICK, FONT_FACET, FONT_LEGEND,
+from figures.style import (
+    HW_COLORS, FONT_LABEL, FONT_TICK, FONT_FACET, FONT_LEGEND,
     SINGLE_COL_W, RESULTS_DIR,
 )
+from analysis.data_loader import load_all_data, UTIL_EXCLUDE_HW
 
 PDF_OUT = RESULTS_DIR / "predictor_vs_power.pdf"
 
@@ -34,8 +33,6 @@ X_LABEL_MFU  = "MFU (%)"
 X_LABEL_UTIL = "GPU Utilization (%)"
 Y_LABEL      = "Internal GPU power (W)"
 
-# Stable row order (mirrors the prediction_error figure; L4 is a placeholder
-# for ongoing measurements and renders as empty panels).
 HW_ORDER = [
     "NVIDIA A100",
     "NVIDIA L40",
@@ -52,21 +49,7 @@ DTYPE_COLORS = {
 }
 
 # ---------------------------------------------------------------- Load
-dfs = []
-for agg_path, _, hw_name in HW_CONFIGS:
-    try:
-        df = pd.read_csv(agg_path)
-        if "model_name" in df.columns:
-            df = df.query('model_name != "baseline"')
-        df["hardware"] = hw_name
-        dfs.append(df)
-    except FileNotFoundError as e:
-        print(f"  Skipping {hw_name}: {e}")
-
-if not dfs:
-    raise SystemExit("No data loaded.")
-
-df_all = pd.concat(dfs, ignore_index=True)
+df_all, _ = load_all_data()
 needed = {"mfu_percentage_calflops_mean", "gpu_utilization_mean",
           "power_draw_watts_mean", "hardware", "dtype"}
 if not needed.issubset(df_all.columns):
