@@ -1,102 +1,48 @@
-#!/usr/bin/env python
-"""External vs internal GPU power, by hardware (validation, appendix).
+"""External meter vs internal GPU power for the externally validated GPUs."""
 
-Exports: results/external_vs_internal_power.pdf
-"""
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-import numpy as np
-import pandas as pd
-import plotly.express as px
-import plotly.io as pio
-import statsmodels.api as sm
-
+from data import load_all_data, EXTERNAL_VALIDATED_HW
 from figures.style import (
-    HW_COLORS, FONT_LABEL, FONT_TICK, FONT_FACET,
-    SINGLE_COL_W, RESULTS_DIR,
-)
-from analysis.data_loader import load_all_data, EXTERNAL_VALIDATED_HW
-
-PDF_OUT = RESULTS_DIR / "external_vs_internal_power.pdf"
-
-X_LABEL = "GPU-reported power (W)"
-Y_LABEL = "External meter power (W)"
-X_RANGE = [None, 350]
-Y_RANGE = [200, None]
-
-# ------------------------------------------------------------------
-# Load data
-# ------------------------------------------------------------------
-df_all, _ = load_all_data()
-subset = df_all[df_all["hardware"].isin(EXTERNAL_VALIDATED_HW)]
-
-# ------------------------------------------------------------------
-# Build figure
-# ------------------------------------------------------------------
-needed = {"power_draw_watts_mean", "power_meter_active_power_w_mean"}
-if not needed.issubset(df_all.columns):
-    raise SystemExit(f"Missing columns: {needed - set(df_all.columns)}")
-
-subset = df_all.dropna(subset=list(needed))
-
-symbol_col = "dtype" if "dtype" in subset.columns else None
-
-fig = px.scatter(
-    subset,
-    x="power_draw_watts_mean",
-    y="power_meter_active_power_w_mean",
-    color="hardware",
-    symbol=symbol_col,
-    color_discrete_map=HW_COLORS,
-    facet_col="hardware",
-    facet_col_wrap=2,
-    trendline="ols",
-    labels={
-        "power_draw_watts_mean": X_LABEL,
-        "power_meter_active_power_w_mean": Y_LABEL,
-        "hardware": "Hardware",
-    },
+    HW_COLORS, SINGLE_COL_W, RESULTS_DIR,
+    label, set_paper_style,
 )
 
-# Identity (y = x) dashed line in every facet
-mn = float(min(subset["power_draw_watts_mean"].min(),
-               subset["power_meter_active_power_w_mean"].min()))
-mx = float(max(subset["power_draw_watts_mean"].max(),
-               subset["power_meter_active_power_w_mean"].max()))
-for xax in [a for a in fig.layout if a.startswith("xaxis")]:
-    sfx = xax.replace("xaxis", "")
-    fig.add_shape(
-        type="line", x0=mn, y0=mn, x1=mx, y1=mx,
-        xref="x" + sfx, yref="y" + sfx,
-        line=dict(color="black", dash="dash", width=1),
-        layer="below",
+set_paper_style()
+df_agg, _ = load_all_data()
+
+COLS = ["power_draw_watts_mean", "power_meter_active_power_w_mean"]
+subset = (df_agg[df_agg["hardware"].isin(EXTERNAL_VALIDATED_HW)]
+          .dropna(subset=COLS))
+
+hws = [hw for hw in EXTERNAL_VALIDATED_HW if hw in subset["hardware"].unique()]
+fig, axes = plt.subplots(
+    1, len(hws),
+    figsize=(SINGLE_COL_W, 1.7),
+    sharey=True, constrained_layout=True,
+)
+if len(hws) == 1:
+    axes = [axes]
+
+for ax, hw in zip(axes, hws):
+    d = subset[subset["hardware"] == hw]
+    sns.regplot(
+        data=d, x=COLS[0], y=COLS[1], ax=ax,
+        scatter_kws={"alpha": 0.5, "s": 6},
+        line_kws={"lw": 1.0},
+        color=HW_COLORS[hw],
     )
+    ax.set_title(label(hw, sep=" "))
+    ax.set_xlabel("Internal GPU power (W)")
 
-# Remove "Hardware=" prefix from facet labels
-fig.for_each_annotation(lambda a: a.update(
-    text=a.text.replace("hardware=", "").replace("Hardware=", ""),
-    font=dict(size=FONT_FACET),
-))
+    mn = float(d[COLS].min().min())
+    mx = float(d[COLS].max().max())
+    ax.plot([mn, mx], [mn, mx], "k--", lw=0.6, alpha=0.5)
 
-# Axis range
-fig.update_xaxes(range=X_RANGE)
-fig.update_yaxes(range=Y_RANGE)
+axes[0].set_ylabel("External meter power (W)")
+for ax in axes[1:]:
+    ax.set_ylabel("")
 
-# Typography & layout
-fig.update_xaxes(title_font=dict(size=FONT_LABEL), tickfont=dict(size=FONT_TICK))
-fig.update_yaxes(title_font=dict(size=FONT_LABEL), tickfont=dict(size=FONT_TICK))
-
-fig.update_layout(
-    template="simple_white",
-    width=SINGLE_COL_W,
-    height=320,
-    margin=dict(l=80, r=20, t=40, b=70),
-    showlegend=False,
-    font=dict(size=FONT_TICK),
-    title=None,
-)
-
-# ------------------------------------------------------------------
-# Export
-# ------------------------------------------------------------------
-pio.write_image(fig, PDF_OUT, format="pdf", scale=2)
-print(f"PDF saved → {PDF_OUT.resolve()}")
+fig.savefig(RESULTS_DIR / "external_vs_internal_power.pdf", bbox_inches="tight")
+print(f"PDF saved -> {RESULTS_DIR / 'external_vs_internal_power.pdf'}")
