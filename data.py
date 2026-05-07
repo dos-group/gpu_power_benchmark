@@ -1,6 +1,6 @@
 """Shared loader for the published per-GPU benchmark and aggregation CSVs.
 
-Used by both ``Data-Analysis.py`` (table generation) and the ``figures/``
+Used by both ``analyze.py`` (table generation) and the ``figures/``
 plot scripts. Hardware display names use ``<br>`` as a soft-break placeholder;
 callers replace it with space or newline as needed for their output medium.
 """

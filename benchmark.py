@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
 import csv
+import json
 import logging
 import subprocess
 import time
+import traceback
 import hydra
 from dataclasses import dataclass, asdict, field
 from omegaconf import DictConfig, OmegaConf
 from hydra.core.config_store import ConfigStore
-from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-from typing import cast
+from typing import Dict, List, Optional, Tuple, cast
 import re
 import shutil
 import os
@@ -221,7 +221,7 @@ class ConvergenceChecker:
 class PowerMeterConfig:
     url: str = "http://powermeter01.cit.tu-berlin.de/status.json"
     user: str = "admin"
-    password: str = "#Ofumdad12167"
+    password: str = "#Ofumdad12167"  # TODO: load from env (POWER_METER_PASSWORD)
     components: str = "9029395"
     referer: str = "http://powermeter01.cit.tu-berlin.de/dashboard.html"
     sessionrs: str = "5"
@@ -465,7 +465,6 @@ class GPUMonitor:
                     "--showuse", "--showmemuse", "--showtemp", "--showpower", "--json",
                 ]
                 output = subprocess.check_output(cmd, text=True, timeout=5)
-                import json
                 start = output.find("{")
                 end = output.rfind("}")
                 if start == -1 or end == -1 or end <= start:
@@ -663,11 +662,6 @@ class MFUCalculator:
             # For training, multiply by ~3 (forward + backward + optimizer)
             training_flops_total = flops_value * 3.0
             
-            # Calculate FLOPs per token
-            """batch_size = inputs['input_ids'].size(0)
-            sequence_length = inputs['input_ids'].size(1)
-            total_tokens = batch_size * sequence_length"""
-
             total_tokens = inputs.get("input_ids").numel()          # numel give the total number of elements in the input tensor.
             
             flops_per_token = training_flops_total / total_tokens if total_tokens > 0 else 0
@@ -738,7 +732,7 @@ class DataLogger:
         self.append_mode = append_mode
         self.logger = logger or logging.getLogger(__name__)
 
-    def _save_samples_to_csv(self, samples: List[BenchmarkSample]) -> None:
+    def save_samples(self, samples: List[BenchmarkSample]) -> None:
         try:
             if not samples:
                 self.logger.info("---------------Samples gone----------------")
@@ -1100,7 +1094,6 @@ class ModelTrainingBenchmark:
             torch.cuda.empty_cache()
         except Exception as e:
             self.logger.error(f"Error benchmarking {model_name}: {e}")
-            import traceback
             traceback.print_exc()
         
         return samples
@@ -1196,7 +1189,7 @@ class WorkloadController:
                     time.sleep(self.config.sampling_interval)
 
             # save once, after the loop
-            self.data_logger._save_samples_to_csv(samples)
+            self.data_logger.save_samples(samples)
             self.logger.info("Baseline collection complete: %d samples saved.", len(samples))
 
         except Exception as e:
@@ -1227,7 +1220,7 @@ class WorkloadController:
                 samples = self.model_benchmark.benchmark_model(model_name, batch_size)
                 all_samples.extend(samples)
 
-                self.data_logger._save_samples_to_csv(samples)
+                self.data_logger.save_samples(samples)
                 
                 # Cooldown between combinations
                 if self.config.cooldown_seconds > 0 and not self.interrupted:

@@ -7,7 +7,6 @@ Aggregates benchmark results by configuration and flags capped runs.
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # ============================================================================
 # CONFIGURATION - Edit these values as needed
@@ -16,7 +15,6 @@ INPUT_DIR = "./benchmark_results"
 OUTPUT_DIR = "./aggregation_results"
 INPUT_GLOB = "mfu_benchmark_results_*.csv"
 MAX_SAMPLES_PER_CONFIG = 300
-GENERATE_CHARTS = True
 
 # ============================================================================
 # Column definitions
