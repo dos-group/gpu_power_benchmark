@@ -11,7 +11,7 @@ A modular framework for benchmarking GPU power draw and Model FLOPs Utilization 
 - `analysis/`: Modules for data processing and analysis.
   - `data_loader.py`: Shared hardware configurations and data loading.
   - `aggregate.py`: Consolidates raw benchmark results.
-  - `tables.py`: Generates statistical tables and HTML reports.
+  - `tables.py`: Generates statistical tables and LaTeX exports.
 - `figures/`: Plotting scripts for paper figures.
   - `style.py`: Shared visual styling (colors, fonts).
 
