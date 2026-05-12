@@ -9,7 +9,7 @@ HW_ORDER = [
     "NVIDIA<br>A100",
     "NVIDIA<br>L40",
     "NVIDIA<br>L4",
-    "NVIDIA<br>Quadro 5000",
+    "NVIDIA<br>Quadro RTX 5000",
     "NVIDIA<br>RTX 4070 Ti",
     "AMD<br>MI210",
 ]
@@ -18,7 +18,7 @@ HW_COLORS = {
     "NVIDIA<br>A100":          "#332288",
     "NVIDIA<br>L40":           "#117733",
     "NVIDIA<br>L4":            "#88CCEE",
-    "NVIDIA<br>Quadro 5000":   "#DDCC77",
+    "NVIDIA<br>Quadro RTX 5000":   "#DDCC77",
     "NVIDIA<br>RTX 4070 Ti":   "#CC6677",
     "AMD<br>MI210":            "#AA4499",
 }
@@ -34,13 +34,14 @@ PREDICTOR_COLORS = {
     "GPU Util (%)": "#ff7f0e",
 }
 
-# IEEE conference geometry (inches). Keep both single-column figures at
+# IEEE conference geometry (inches). Keep both single-column create_figures at
 # the same width so they print at the same effective font size.
-SINGLE_COL_W = 3.4
-DOUBLE_COL_W = 7.0
-ROW_H        = 1.1   # per-row height in stacked single-column grids
+SINGLE_COL_W = 5.0
+SINGLE_COL_W2 = 4.5
+DOUBLE_COL_W = 10.5
+ROW_H        = 1.3   # per-row height in stacked single-column grids
 
-RESULTS_DIR = PROJECT_ROOT / "results"
+RESULTS_DIR = PROJECT_ROOT / "figures"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 

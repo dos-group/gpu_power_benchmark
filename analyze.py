@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-"""Cross-hardware energy predictor analysis.
-Loads CSVs and produces paper tables / table-only HTML output.
-"""
+"""Cross-hardware energy predictor analysis."""
 
 from __future__ import annotations
 from pathlib import Path
@@ -11,8 +9,7 @@ import statsmodels.api as sm
 
 from data import load_all_data
 
-OUTDIR = Path("results")
-OUTFILE = OUTDIR / "cross_hardware_energy_predictors.html"
+OUTDIR = Path("figures")
 OUTDIR.mkdir(exist_ok=True)
 
 df_all, df_raw_all = load_all_data()
@@ -328,43 +325,3 @@ for param in ["batch_size", "context_window", "dtype", "hardware"]:
         print(f"\nEffect of {param} on MFU/UTIL -> INTERNAL power predictability (config-level R^2)")
         print(t.to_string(index=False))
 
-
-# ----------------------------------------------------------
-# Export table-only HTML
-# ----------------------------------------------------------
-
-tables_html = ""
-if not meter_fit_hw.empty:
-    tables_html += "<h2>Per-hardware meter agreement (External vs Internal)</h2>"
-    tables_html += meter_fit_hw.round(4).to_html(index=False, border=0)
-if not pred_int_table.empty:
-    tables_html += "<h2>MFU vs GPU Utilization as predictors of INTERNAL power</h2>"
-    tables_html += pred_int_table.to_html(index=False, border=0)
-if not dtype_fit_df.empty:
-    tables_html += "<h2>OLS fits: Internal power vs Predictor per dtype</h2>"
-    tables_html += dtype_fit_df.round(4).to_html(index=False, border=0)
-for param, table_df in param_tables.items():
-    pretty = {
-        "batch_size": "Batch size",
-        "context_window": "Context window",
-        "dtype": "Dtype",
-        "hardware": "Hardware",
-    }.get(param, param)
-    tables_html += f"<h2>Effect of {pretty} on MFU/UTIL → INTERNAL power predictability (config-level R²)</h2>"
-    tables_html += table_df.to_html(index=False, border=0)
-
-html = (
-    "<!doctype html><html><head><meta charset='utf-8'/>"
-    "<title>Cross-Hardware Energy Predictors</title>"
-    "<style>body{font-family:system-ui,Arial;margin:16px}"
-    "table{border-collapse:collapse;margin:16px 0 32px}"
-    "th,td{border:1px solid #ccc;padding:4px 8px;font-size:12px}"
-    "h2{margin-top:32px}</style></head><body>"
-    "<h1>Cross-Hardware MFU vs GPU Utilization Analysis</h1>"
-    + tables_html
-    + "</body></html>"
-)
-
-with open(OUTFILE, "w", encoding="utf-8") as f:
-    f.write(html)
-print(f"\nHTML saved → {OUTFILE.resolve()}")

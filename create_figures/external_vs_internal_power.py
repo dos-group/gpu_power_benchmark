@@ -1,10 +1,14 @@
 """External meter vs internal GPU power for the externally validated GPUs."""
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 from data import load_all_data, EXTERNAL_VALIDATED_HW
-from figures.style import (
+from create_figures.style import (
     HW_COLORS, SINGLE_COL_W, RESULTS_DIR,
     label, set_paper_style,
 )
@@ -19,11 +23,9 @@ subset = (df_agg[df_agg["hardware"].isin(EXTERNAL_VALIDATED_HW)]
 hws = [hw for hw in EXTERNAL_VALIDATED_HW if hw in subset["hardware"].unique()]
 fig, axes = plt.subplots(
     1, len(hws),
-    figsize=(SINGLE_COL_W, 1.7),
+    figsize=(SINGLE_COL_W, 2),
     sharey=True, constrained_layout=True,
 )
-if len(hws) == 1:
-    axes = [axes]
 
 for ax, hw in zip(axes, hws):
     d = subset[subset["hardware"] == hw]
@@ -34,15 +36,20 @@ for ax, hw in zip(axes, hws):
         color=HW_COLORS[hw],
     )
     ax.set_title(label(hw, sep=" "))
-    ax.set_xlabel("Internal GPU power (W)")
+    ax.set_xlabel("GPU-reported power (W)")
+
+    ax.set_xlim((0,350))
+    ax.set_ylim((0,520))
 
     mn = float(d[COLS].min().min())
     mx = float(d[COLS].max().max())
-    ax.plot([mn, mx], [mn, mx], "k--", lw=0.6, alpha=0.5)
+    ax.plot([0, 1000], [0, 1000], "k--", lw=0.6, alpha=0.5)
 
 axes[0].set_ylabel("External meter power (W)")
 for ax in axes[1:]:
     ax.set_ylabel("")
+
+sns.despine(fig)
 
 fig.savefig(RESULTS_DIR / "external_vs_internal_power.pdf", bbox_inches="tight")
 print(f"PDF saved -> {RESULTS_DIR / 'external_vs_internal_power.pdf'}")

@@ -1,6 +1,6 @@
 """Shared loader for the published per-GPU benchmark and aggregation CSVs.
 
-Used by both ``analyze.py`` (table generation) and the ``figures/``
+Used by both ``analyze.py`` (table generation) and the ``create_figures/``
 plot scripts. Hardware display names use ``<br>`` as a soft-break placeholder;
 callers replace it with space or newline as needed for their output medium.
 """
@@ -22,7 +22,7 @@ HW_CONFIGS: list[tuple[str, str, str]] = [
      "NVIDIA<br>L40"),
     ("aggregation_results/mfu_aggregated_per_config_GPU06.csv",
      "benchmark_results/mfu_benchmark_results_GPU06_128.csv",
-     "NVIDIA<br>Quadro 5000"),
+     "NVIDIA<br>Quadro RTX 5000"),
     ("aggregation_results/mfu_aggregated_per_config_4070.csv",
      "benchmark_results/mfu_benchmark_results_4070_128.csv",
      "NVIDIA<br>RTX 4070 Ti"),
@@ -36,7 +36,7 @@ HW_CONFIGS: list[tuple[str, str, str]] = [
 UTIL_EXCLUDE_HW: set[str] = {"AMD<br>MI210"}
 
 # Only these GPUs were instrumented with an external power meter.
-EXTERNAL_VALIDATED_HW: set[str] = {"NVIDIA<br>L40", "NVIDIA<br>Quadro 5000"}
+EXTERNAL_VALIDATED_HW: set[str] = {"NVIDIA<br>L40", "NVIDIA<br>Quadro RTX 5000"}
 
 
 def load_all_data() -> Tuple[pd.DataFrame, pd.DataFrame]:

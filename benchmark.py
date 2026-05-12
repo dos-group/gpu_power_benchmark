@@ -291,11 +291,12 @@ def pick_peak_tflops(device_name: str, dtype: str) -> float:
     supports_bf16 = bool(getattr(torch.cuda, "is_bf16_supported", lambda: False)())
 
     gpu_specs = {
-        "rtx 4070 ti": {"fp32": 40.1, "fp16": 321.0, "bf16": 321.0},
-        "quadro rtx 5000": {"fp32": 11.2, "fp16": 89.2, "bf16": None},
+        "rtx 4070 ti": {"fp32": 40.1, "fp16": 80.2, "bf16": 80.2},
+        "quadro rtx 5000": {"fp32": 89.2, "fp16": 89.2, "bf16": None},
         "nvidia l40": {"fp32": 90.5, "fp16": 181.05, "bf16": 181.05},
+        "nvidia l4": {"fp32": 30.3, "fp16": 121.0, "bf16": 121.0},
         "nvidia a100": {"fp32": 156, "fp16": 312, "bf16": 312},
-        "amd instinct mi210": {"fp32": 22.6, "fp16": 181, "bf16": 181}
+        "amd instinct mi210": {"fp32": 181, "fp16": 181, "bf16": 181}
     }
 
     for key, specs in gpu_specs.items():
