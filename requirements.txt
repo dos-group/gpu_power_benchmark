@@ -1,0 +1,11 @@
+hydra-core
+matplotlib
+numpy
+omegaconf
+pandas
+requests
+seaborn
+statsmodels
+torch
+transformers
+calflops
