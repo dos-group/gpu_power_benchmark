@@ -124,8 +124,8 @@ class AppConfig:
             "params": {
                 # Comma-separated choices => Hydra takes the cross product
                 "benchmark.dtype": "bfloat16, float16, float32",                  
-                "benchmark.cooldown_seconds": "0.0, 5",                
-                "benchmark.warmup_iterations": "0, 5",                   
+                "benchmark.cooldown_seconds": "5, 5",                
+                "benchmark.warmup_iterations": "5, 5",                   
                 "benchmark.context_window": "512, 2048"
             }
         }
