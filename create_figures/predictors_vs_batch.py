@@ -29,8 +29,8 @@ UTIL = "gpu_utilization_mean"
 
 d = df_agg.dropna(subset=["batch_size"]).copy()
 
-fig, axes = plt.subplots(1, 2, figsize=(SINGLE_COL_W, 2),
-                         sharex=True, gridspec_kw={"wspace": 0.3})
+fig, axes = plt.subplots(1, 2, figsize=(SINGLE_COL_W, 1.7),
+                         sharex=True, gridspec_kw={"wspace": 0.4})
 
 for ax, col, title in [(axes[0], MFU, "MFU (%)"),
                        (axes[1], UTIL, "GPU Utilization (%)")]:

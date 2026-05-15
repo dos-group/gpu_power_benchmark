@@ -17,15 +17,15 @@ import matplotlib.pyplot as plt
 
 from data import load_all_data, UTIL_EXCLUDE_HW
 from create_figures.style import (
-    HW_ORDER, PREDICTOR_COLORS, SINGLE_COL_W2, RESULTS_DIR,
+    HW_ORDER, PREDICTOR_COLORS, SINGLE_COL_W, RESULTS_DIR,
     label, set_paper_style,
 )
 
 set_paper_style()
 _, df_raw = load_all_data()
 
-PREDS = [("mfu_percentage_calflops", "MFU (%)"),
-         ("gpu_utilization",         "GPU Util (%)")]
+PREDS = [("mfu_percentage_calflops", "MFU"),
+         ("gpu_utilization",         "GPU Utilization")]
 TARGET = "power_draw_watts"
 GROUP_COLS = ["dtype", "batch_size"]
 MIN_CELL = 5
@@ -43,7 +43,7 @@ def fit_errors(g: pd.DataFrame, pred: str) -> pd.Series:
 rows = []
 for hw, g in df_raw.groupby("hardware"):
     for col, lbl in PREDS:
-        if lbl == "GPU Util (%)" and hw in UTIL_EXCLUDE_HW:
+        if lbl == "GPU Utilization" and hw in UTIL_EXCLUDE_HW:
             continue
         # Pooled per-GPU fit.
         for e in fit_errors(g, col):
@@ -61,7 +61,7 @@ df_err = pd.DataFrame(rows)
 df_err["hardware_label"] = df_err["hardware"].apply(label)
 hw_order_labels = [label(hw) for hw in HW_ORDER]
 
-fig, axes = plt.subplots(2, 1, figsize=(SINGLE_COL_W2, 3.4),
+fig, axes = plt.subplots(2, 1, figsize=(SINGLE_COL_W, 2.8),
                          sharex=True, constrained_layout=True)
 
 COND_LABELS = {
@@ -87,7 +87,7 @@ for ax, cond in zip(axes, ["pooled", "+ dtype, batch"]):
         if ax.get_legend() is not None:
             ax.get_legend().remove()
 
-fig.supylabel("Relative prediction error (%)", x=-0.04, fontsize=9)
+fig.supylabel("Relative prediction error (%)", x=-0.05, fontsize=9)
 sns.despine(fig)
 fig.savefig(RESULTS_DIR / "prediction_error.pdf", bbox_inches="tight")
 print(f"PDF saved -> {RESULTS_DIR / 'prediction_error.pdf'}")

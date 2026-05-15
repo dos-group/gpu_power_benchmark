@@ -71,16 +71,15 @@ def fit_and_predict(g_in: pd.DataFrame, mode: str) -> pd.Series:
 
 
 for col, (mode, col_title) in enumerate([
-    ("pooled", "MFU only"),
-    ("cell",   "MFU + (dtype, batch)"),
+    ("pooled", "conditioned on\nGPU"),
+    ("cell",   "conditioned on\n(GPU, dtype, batch size)"),
 ]):
     axes[0, col].set_title(col_title, pad=2)
 
 for row, hw in enumerate(HW_ORDER):
     for col, mode in enumerate(["pooled", "cell"]):
         ax = axes[row, col]
-        src_hw = "NVIDIA<br>L40" if hw == "NVIDIA<br>L4" else hw
-        g = d[d["hardware"] == src_hw]
+        g = d[d["hardware"] == hw]
         if g.empty:
             ax.set_xticks([]); ax.set_yticks([])
             continue

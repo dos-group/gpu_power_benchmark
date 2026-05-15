@@ -30,8 +30,8 @@ DTYPE_COLORS = {
 }
 
 PREDICTOR_COLORS = {
-    "MFU (%)":      "#1f77b4",
-    "GPU Util (%)": "#ff7f0e",
+    "MFU":             "#1f77b4",
+    "GPU Utilization": "#ff7f0e",
 }
 
 # IEEE conference geometry (inches). Keep both single-column create_figures at
